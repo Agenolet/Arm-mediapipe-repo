@@ -1,5 +1,5 @@
 # Squad_Mediapipe.py
-# ESTE SCRIPT DETECTA LA FLEXION DE RODILLA ...
+# ESTE SCRIPT DETECTA LA FLEXION DE RODILLA
 
 import cv2
 import mediapipe as mp
