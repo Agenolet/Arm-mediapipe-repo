@@ -20,9 +20,10 @@ cap = cv2.VideoCapture(video_file)
 
 # Datos del video cargado
 FPS_original = cap.get(5)  #ej. 24.0 
-width_original  = cap.get(3)   # float `width`
-height_original = cap.get(4)  # float `height`
+width_original  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float "width"
+height_original = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float "height"
 resolution_original =  (int(width_original), int(height_original))  #ej. (640, 480)
+#fourcc_original = cap.get(cv2.CAP_PROP_FOURCC) #No se utilizar esta funcion
 print("FPS_original:" + str(FPS_original) + " | width_original: " + str(width_original) + " | height_original: " + str(height_original))
 
 # cv2.CAP_PROP_FRAME_WIDTH   # 3
@@ -31,7 +32,7 @@ print("FPS_original:" + str(FPS_original) + " | width_original: " + str(width_or
 # cv2.CAP_PROP_FRAME_COUNT   # 7
 
 # Nombre Y ruta del video generado para guardar como RESULTADO
-video_path_result = "C:/Visual Code scripts/Videos/Videos Resultados/"
+video_path_result = "C:/Visual Code scripts/Arm-mediapipe-repo/Videos/Videos Resultados/"
 video_file_name_result = video_file_name + "_resultado"
 video_file_extension_result = video_file_extension
 video_file_result = video_path_result + video_file_name_result + video_file_extension_result
@@ -45,7 +46,7 @@ resolution_result = (width_result, height_result)   #ej. (640, 480)
 print("\n-FPS_result: " + str(FPS_result) + "\n-width_result: " + str(width_result) + "\n-height_result: " + str(height_result) + "\n-Resize Escala: " + str(scale_percent) + "\n")
 
 # Creacion de los objetos para el guardado del video prosesado
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') #*'mpv4"
 outVideoWriter = cv2.VideoWriter(video_file_result, fourcc, FPS_result, resolution_result) # (name.mp4, fourcc, FPS, resolution)
 
 # Vector de angulos de codo (elbow)
@@ -130,31 +131,11 @@ with mp_pose.Pose(static_image_mode=False) as pose:
                 break
 
 # Guardo los angulos medidos
-print("\n ANGULOS: \n")
-print(V_angles_elbow)
-with open('C:/Visual Code scripts/Datos/angulos_' + video_file_name + '.txt', 'wb') as f:
+#print("\n ANGULOS: \n")
+#print(V_angles_elbow)
+with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/angulos_' + video_file_name + '.txt', 'wb') as f:
     np.savetxt(f, V_angles_elbow, delimiter=', ', fmt='%0.1f')
 
 cap.release()
 outVideoWriter.release()
 cv2.destroyAllWindows()
-
-# C++ run python file: (https://medium.datadriveninvestor.com/how-to-quickly-embed-python-in-your-c-application-23c19694813)
-
-# #include "Python.h"
-# int main()
-# {
-# 	//Initialize the python instance
-# 	Py_Initialize();
-	
-# 	//Run a simple string
-# 	PyRun_SimpleString("from time import time,ctime\n"
-# 						"print('Today is',ctime(time()))\n");
-# //Run a simple file
-# 	FILE* PScriptFile = fopen("test.py", "r");
-# 	if(PScriptFile){
-# 		PyRun_SimpleFile(PScriptFile, "test.py");
-# 		fclose(PScriptFile);
-# //Close the python instance
-# 	Py_Finalize();
-# }
