@@ -11,7 +11,7 @@ mp_pose = mp.solutions.pose
 
 # Nombre y ruta de video ORIGINAL
 video_path = "C:/Visual Code scripts/Arm-mediapipe-repo/Videos/"    # ----->>>  SE DEBE EDITAR EN CADA PC
-video_file_name = "prueba08"
+video_file_name = "prueba_squad_01"
 video_file_extension = ".mp4"
 video_file = video_path + video_file_name + video_file_extension
 # Carga de archivo
