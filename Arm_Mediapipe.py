@@ -19,12 +19,18 @@ print( "Se analizará: " + video_file + " ...")
 cap = cv2.VideoCapture(video_file)
 
 # Datos del video cargado
-FPS_original = cap.get(5)  #ej. 24.0 
+FPS_original = cap.get(5)  #ej. 25.0 
+frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+duration = frame_count/FPS_original
+delta_t = 1/FPS_original
 width_original  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float "width"
 height_original = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float "height"
 resolution_original =  (int(width_original), int(height_original))  #ej. (640, 480)
 #fourcc_original = cap.get(cv2.CAP_PROP_FOURCC) #No se utilizar esta funcion
-print("FPS_original:" + str(FPS_original) + " | width_original: " + str(width_original) + " | height_original: " + str(height_original))
+print("\n-FPS_original:" + str(FPS_original) + 
+    "\n-frame_count_original: " + str(frame_count) + 
+    "\n-duration_original:" + str(duration) + "s" 
+    + "\n-resolution_original: " + str(width_original) + "x" + str(height_original) + "\n")
 
 # cv2.CAP_PROP_FRAME_WIDTH   # 3
 # cv2.CAP_PROP_FRAME_HEIGHT  # 4
@@ -39,18 +45,21 @@ video_file_result = video_path_result + video_file_name_result + video_file_exte
 
 # Datos para el video generado para guardar
 scale_percent = 50 # Porcentaje de escalado para el video a guardar (será el mismo para el video original a mostrar)
-FPS_result = FPS_original   #ej. 24.0
+FPS_result = FPS_original   #ej. 25.0
 width_result = int(width_original * scale_percent / 100)
 height_result = int(height_original * scale_percent / 100)
 resolution_result = (width_result, height_result)   #ej. (640, 480)
+frame_count_result = 0
+duration_result = 0
 print("\n-FPS_result: " + str(FPS_result) + "\n-width_result: " + str(width_result) + "\n-height_result: " + str(height_result) + "\n-Resize Escala: " + str(scale_percent) + "\n")
 
 # Creacion de los objetos para el guardado del video prosesado
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') #*'mpv4"
 outVideoWriter = cv2.VideoWriter(video_file_result, fourcc, FPS_result, resolution_result) # (name.mp4, fourcc, FPS, resolution)
 
-# Vector de angulos de codo (elbow)
-V_angles_elbow = np.zeros(1)
+# Vector de angulos y velocidades angulares de codo (elbow)
+V_angles_elbow = np.zeros(0)
+V_vel_angles_elbow = np.zeros(0)
 
 # Inicio de While True para reproduccion y analisis
 with mp_pose.Pose(static_image_mode=False) as pose:
@@ -60,6 +69,8 @@ with mp_pose.Pose(static_image_mode=False) as pose:
         if ret == False:
             break      
         
+        frame_count_result = frame_count_result + 1
+
         # Si la imagen necesita espejarce (flip)
         # frame = cv2.flip(frame, 1)
      
@@ -101,6 +112,12 @@ with mp_pose.Pose(static_image_mode=False) as pose:
             # Calcular el ángulo (teorema del coseno) y lo agrego a V_angles_elbow
             angle = degrees(acos((l1**2 + l3**2 - l2**2) / (2 * l1 * l3)))
             V_angles_elbow = np.append(V_angles_elbow, int(angle))
+
+            # Calcular la velocidad angular y lo agrego a V_vel_angles_elbow
+            if (np.size(V_angles_elbow) > 2):
+                angles_count = np.size(V_angles_elbow)
+                vel_angles_elbow = ( V_angles_elbow[angles_count-1] - V_angles_elbow[angles_count-2] ) / delta_t
+                V_vel_angles_elbow = np.append(V_vel_angles_elbow, int(vel_angles_elbow))
             
             # Visualización de segmentos del brazo y angulo
             aux_image = np.zeros(resized_frame.shape, np.uint8)
@@ -111,7 +128,7 @@ with mp_pose.Pose(static_image_mode=False) as pose:
             contours = np.array([[x1, y1], [x2, y2], [x3, y3]])
             cv2.fillPoly(aux_image, pts=[contours], color=(128, 200, 250))
 
-            output = cv2.addWeighted(resized_frame, 1, aux_image, 0.8, 0)   #output es el frame ya prosesado
+            output = cv2.addWeighted(resized_frame, 1, aux_image, 0.8, 0)   #output es el frame ya procesado
 
             cv2.circle(output, (x1, y1), 6, (0, 255, 255), 4)
             cv2.circle(output, (x2, y2), 6, (128, 0, 255), 4)
@@ -130,12 +147,25 @@ with mp_pose.Pose(static_image_mode=False) as pose:
             if cv2.waitKey(1) & 0xFF == ord(' '):
                 break
 
+
 # Guardo los angulos medidos
 #print("\n ANGULOS: \n")
 #print(V_angles_elbow)
 with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/angulos_' + video_file_name + '.txt', 'wb') as f:
-    np.savetxt(f, V_angles_elbow, delimiter=', ', fmt='%0.1f')
+    np.savetxt(f, V_angles_elbow, delimiter=',', fmt='%0.1f')
+
+# Guardo las velocidades angulares medidas
+#print("\n Vel_angulos: \n")
+#print(V_vel_angles_elbow)
+with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/vel_angulos_' + video_file_name + '.txt', 'wb') as g:
+    np.savetxt(g, V_vel_angles_elbow, delimiter=',', fmt='%0.1f')
+
 
 cap.release()
 outVideoWriter.release()
 cv2.destroyAllWindows()
+
+#Datos del video resultado generado
+# FPS, resolution y factor de escala ya se determinaron antes
+duration_result = frame_count_result/FPS_result
+print("\n-frame_count_result: " + str(frame_count_result) + "\n-duration_result: " + str(duration_result))
