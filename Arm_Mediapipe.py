@@ -5,6 +5,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from math import acos, degrees
+# import csv
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
@@ -30,7 +31,7 @@ resolution_original =  (int(width_original), int(height_original))  #ej. (640, 4
 print("\n-FPS_original:" + str(FPS_original) + 
     "\n-frame_count_original: " + str(frame_count) + 
     "\n-duration_original:" + str(duration) + "s" 
-    + "\n-resolution_original: " + str(width_original) + "x" + str(height_original) + "\n")
+    + "\n-resolution_original: " + str(int(width_original)) + "x" + str(int(height_original)) + "\n")
 
 # cv2.CAP_PROP_FRAME_WIDTH   # 3
 # cv2.CAP_PROP_FRAME_HEIGHT  # 4
@@ -51,7 +52,7 @@ height_result = int(height_original * scale_percent / 100)
 resolution_result = (width_result, height_result)   #ej. (640, 480)
 frame_count_result = 0
 duration_result = 0
-print("\n-FPS_result: " + str(FPS_result) + "\n-width_result: " + str(width_result) + "\n-height_result: " + str(height_result) + "\n-Resize Escala: " + str(scale_percent) + "\n")
+
 
 # Creacion de los objetos para el guardado del video prosesado
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') #*'mpv4"
@@ -61,14 +62,22 @@ outVideoWriter = cv2.VideoWriter(video_file_result, fourcc, FPS_result, resoluti
 V_angles_elbow = np.zeros(0)
 V_vel_angles_elbow = np.zeros(0)
 
+# Vector de tiempos para cada frame
+V_time = np.zeros(0)
+
 # Inicio de While True para reproduccion y analisis
 with mp_pose.Pose(static_image_mode=False) as pose:
     while True:
-        ret, frame = cap.read()
+        frame_exist, frame = cap.read()
                 
-        if ret == False:
+        if frame_exist == False:
             break      
         
+        # np.append(V_time, round(cap.get(cv2.CAP_PROP_POS_MSEC)/1000, 4))
+        # #print(round(cap.get(cv2.CAP_PROP_POS_MSEC)/1000, 4))
+
+        V_time= np.append(V_time, frame_count_result/FPS_result)
+
         frame_count_result = frame_count_result + 1
 
         # Si la imagen necesita espejarce (flip)
@@ -148,24 +157,40 @@ with mp_pose.Pose(static_image_mode=False) as pose:
                 break
 
 
-# Guardo los angulos medidos
-#print("\n ANGULOS: \n")
-#print(V_angles_elbow)
-with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/angulos_' + video_file_name + '.txt', 'wb') as f:
-    np.savetxt(f, V_angles_elbow, delimiter=',', fmt='%0.1f')
+# # Guardo los angulos medidos
+# #print("\n ANGULOS: \n")
+# #print(V_angles_elbow)
+# with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/angulos_' + video_file_name + '.csv', 'wb') as f:
+#     np.savetxt(f, V_angles_elbow[:-2], delimiter=',', fmt='%0.1f', header="Ang grad")
 
-# Guardo las velocidades angulares medidas
-#print("\n Vel_angulos: \n")
-#print(V_vel_angles_elbow)
-with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/vel_angulos_' + video_file_name + '.txt', 'wb') as g:
-    np.savetxt(g, V_vel_angles_elbow, delimiter=',', fmt='%0.1f')
+# # Guardo las velocidades angulares medidas
+# #print("\n Vel_angulos: \n")
+# #print(V_vel_angles_elbow)
+# with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/vel_angulos_' + video_file_name + '.csv', 'wb') as g:
+#     np.savetxt(g, V_vel_angles_elbow, delimiter=',', fmt='%0.1f', header="Vel Ang")
+
+# # Guardo archivo de tiempos en cada frame
+# with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/TIME_' + video_file_name + '.csv', 'wb') as j:
+#     np.savetxt(j, V_time, delimiter=',', fmt='%0.1f', header="Time")
+
+# Guardo los datos en un mismo archivo
+V_ang_and_vel = np.stack((V_angles_elbow[:-2], V_vel_angles_elbow, V_time[:-2]), axis=1)
+with open('C:/Visual Code scripts/Arm-mediapipe-repo/Datos/datos_ang_' + video_file_name + '.csv', 'wb') as h:
+    np.savetxt(h, V_ang_and_vel, delimiter=',', fmt='%0.1f', header="Ang (º),Vel (º/s),Time (s)")
 
 
+# Datos del video resultado generado
+# FPS, resolution y factor de escala ya se determinaron/seteados antes
+duration_result = frame_count_result/FPS_result
+print("\n-FPS_result: " + str(FPS_result) + 
+    "\n-width_result: " + str(width_result) + 
+    "\n-height_result: " + str(height_result) + 
+    "\n-Resize Escala: " + str(scale_percent) +
+    "\n-frame_count_result: " + str(frame_count_result) + 
+    "\n-duration_result: " + str(duration_result))
+
+
+# RELESE
 cap.release()
 outVideoWriter.release()
 cv2.destroyAllWindows()
-
-#Datos del video resultado generado
-# FPS, resolution y factor de escala ya se determinaron antes
-duration_result = frame_count_result/FPS_result
-print("\n-frame_count_result: " + str(frame_count_result) + "\n-duration_result: " + str(duration_result))

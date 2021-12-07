@@ -1,0 +1,3 @@
+Datos --> Desde un archivo de texto --> 
+Delimitador: Check Coma
+En avanzados, poner separador decimal el "." y "," para el separador de miles.
